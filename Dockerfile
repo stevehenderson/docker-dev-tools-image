@@ -282,12 +282,46 @@ ENV DEBIAN_FRONTEND noninteractive
 
 
 
-RUN apt-get update && apt-get install -y vim vim-common vim-doc curl net-tools nmap wget whois socat openssh-client openssh-server openssl libwww-perl tig git git-man subversion cvs apt-file alien iotop strace tcpdump iproute2 ltrace lsof inotify-tools sysstat ddd tshark mlocate tcl erlang python-pip python-dev tmux xmlstarlet xclip jq telnet athena-jot xterm eatmydata util-linux moreutils sshfs tree screen xdotool xmlto expect expect-dev coreutils build-essential zip unzip haproxy ansible nethogs iftop ranger mitmproxy ant ascii asciinema asciidoc golang rsync docker at cron expect-dev patch perl perl-base perl-doc perl-modules sed anacron mssh daemon fslint gocr netpipe-tcp netsed netsniff-ng pkg-config procps sudo tcpd time tree tofrodos sec rhino postgresql-client maven lsb-base lsb-release readline-common rlwrap software-properties-common ncurses-base ncurses-bin tcpflow graphviz linux-doc user-mode-linux-doc perl-doc vim-doc bup libmagick++-dev silversearcher-ag ruby-dev webfs etherape python2.7-examples sniffit tcpick tcpreplay tcpreen tcpspy tcputils darkstat stone fatrace gitg git-repair i7z sqlmap ndiff hollywood actiona dateutils youtube-dl dwdiff iodine tsocks mininet dnstracer squashfs-tools x11-utils
+RUN apt-get update && apt-get install -y vim vim-common vim-doc curl net-tools nmap wget whois socat openssh-client openssh-server openssl libwww-perl tig git git-man subversion cvs apt-file alien iotop strace tcpdump iproute2 ltrace lsof inotify-tools sysstat ddd tshark mlocate tcl erlang python-pip python-dev tmux xmlstarlet xclip jq telnet athena-jot xterm eatmydata util-linux moreutils sshfs tree screen xdotool xmlto expect expect-dev coreutils build-essential zip unzip haproxy ansible nethogs iftop ranger mitmproxy ant ascii asciinema asciidoc rsync docker at cron expect-dev patch perl perl-base perl-doc perl-modules sed anacron mssh daemon fslint gocr netpipe-tcp netsed netsniff-ng pkg-config procps sudo tcpd time tree tofrodos sec rhino postgresql-client maven lsb-base lsb-release readline-common rlwrap software-properties-common ncurses-base ncurses-bin tcpflow graphviz linux-doc user-mode-linux-doc perl-doc vim-doc bup libmagick++-dev silversearcher-ag ruby-dev webfs etherape python2.7-examples sniffit tcpick tcpreplay tcpreen tcpspy tcputils darkstat stone fatrace gitg git-repair i7z sqlmap ndiff hollywood actiona dateutils youtube-dl dwdiff iodine tsocks mininet dnstracer squashfs-tools x11-utils
+
 
 RUN apt-get update && apt-get install -y python-pip git
 
-WORKDIR /opt
-RUN git clone https://github.com/ianmiell/docker-dev-tools-image.git  #b
-WORKDIR /opt/docker-dev-tools-image
+#Install go
+RUN  wget https://go.dev/dl/go1.17.3.linux-amd64.tar.gz
+RUN  tar -xvf go1.17.3.linux-amd64.tar.gz -C /usr/local/share
+RUN rm go1.17.3.linux-amd64.tar.gz
+WORKDIR /usr/local/bin/
+RUN  ln -s /usr/local/share/go/bin/go go
 
-CMD ["/bin/bash"] 
+## Create development user
+ARG user=analyst
+RUN useradd -m -s /bin/bash $user
+RUN mkdir /home/$user/.ssh
+
+## Install authorized ssh key for login (e.g. from github:  https://github.com/{username}.keys)
+#RUN curl https://github.com/<github-username>.keys > home/$user/.ssh/authorized_keys
+## Alternatively install authorized ssh key from home directory
+ADD --chown=$user:$user secrets/id_rsa.pub /home/$user/.ssh/authorized_keys
+
+## Configure openssh server
+RUN echo "\n\
+PasswordAuthentication yes \n\
+PermitRootLogin no \n\
+MaxAuthTries 3000 \n\
+LoginGraceTime 1 \n\
+PermitEmptyPasswords no \n\
+ChallengeResponseAuthentication no \n\
+KerberosAuthentication no \n\
+GSSAPIAuthentication no \n\
+X11Forwarding no \n\
+" >> /etc/ssh/sshd_config
+
+## Optionally add pregenerated hostkeys (e.g. via ssh-keygen -A)
+#ADD --chown=root:root hostkeys/* /etc/ssh/
+#RUN chmod 600 /etc/ssh/ssh_host_* && chmod 644 /etc/ssh/ssh_host_*.pub
+
+## Start ssh server and sleep
+CMD service ssh restart && sleep infinity
+
+EXPOSE 22

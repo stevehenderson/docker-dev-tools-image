@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: docker-dev-tools-image
+  name: docker-dev-tools-image-service
+spec:
+  ports:
+  - port: 2222
+    protocol: TCP
+    targetPort: 22
+  selector:
+    app: docker-dev-tools-image
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: docker-dev-tools-image
+spec:
+  selector:
+    matchLabels:
+      app: docker-dev-tools-image
+  serviceName: "docker-dev-tools-image-service"
+  replicas: 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: docker-dev-tools-image # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: docker-dev-tools-image
+        image: digitalblksmith/docker-dev-tools-image
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 22
+          hostPort: 22
+          name: p22
+          protocol: TCP
+        volumeMounts:
+        - name: www
+          mountPath: /home/analyst
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 5Gi
