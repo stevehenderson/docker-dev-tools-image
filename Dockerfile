@@ -302,7 +302,7 @@ RUN mkdir /home/$user/.ssh
 ## Install authorized ssh key for login (e.g. from github:  https://github.com/{username}.keys)
 #RUN curl https://github.com/<github-username>.keys > home/$user/.ssh/authorized_keys
 ## Alternatively install authorized ssh key from home directory
-ADD --chown=$user:$user secrets/id_rsa.pub /home/$user/.ssh/authorized_keys
+ADD --chown=$user:$user include/id_rsa.pub /home/$user/.ssh/authorized_keys
 
 ## Configure openssh server
 RUN echo "\n\
